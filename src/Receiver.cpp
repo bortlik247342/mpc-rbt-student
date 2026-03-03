@@ -18,7 +18,13 @@ void Receiver::Node::run()
 
 void Receiver::Node::onDataReceived(const Socket::IPFrame & frame)
 {
-  UNIMPLEMENTED(__PRETTY_FUNCTION__);
+  if (Utils::Message::deserialize(frame, data)) {
+      RCLCPP_INFO(logger, "--- DATA PRIJATA ---");
+      //RCLCPP_INFO(logger, "X: %.2f, Y: %.2f, Z: %.2f", data.frame.c_str(), data.x, data.y, data.z);
+      RCLCPP_INFO(logger, "\n\tstamp: %ld, X: %.2f, Y: %.2f, Z: %.2f", data.timestamp,data.frame.c_str(), data.x, data.y, data.z);
+  } else {
+      RCLCPP_ERROR(logger, "Chyba deserializace!");
+  }
 
   RCLCPP_INFO(logger, "\n\tstamp: %ld", data.timestamp);
 }
