@@ -16,6 +16,7 @@
 #include "nav_msgs/srv/get_plan.hpp"
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 
+
 class MotionControlNode : public rclcpp::Node {
     public:
         MotionControlNode();
@@ -59,6 +60,9 @@ class MotionControlNode : public rclcpp::Node {
         geometry_msgs::msg::PoseStamped current_pose_;
         geometry_msgs::msg::PoseStamped goal_pose_;
         sensor_msgs::msg::LaserScan laser_scan_;
+        
+
+	bool goal_active_ = false;
     };
 
 

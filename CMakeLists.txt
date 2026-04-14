@@ -21,6 +21,10 @@ find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(mpc_rbt_simulator REQUIRED)
 
+find_package(std_srvs REQUIRED)
+find_package(behaviortree_cpp REQUIRED)
+find_package(behaviortree_ros2 REQUIRED)
+
 # Define include directories for the compiler
 include_directories(PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -39,7 +43,16 @@ set(dependencies
         mpc_rbt_simulator
 )
 
-add_library(${PROJECT_NAME} SHARED src/KeyboardControl.cpp)
+# TODO (Lab 08): Přidejte std_srvs do dependencies výše a odkomentujte bt_dependencies
+ set(bt_dependencies
+         ${dependencies}
+         std_srvs
+         behaviortree_cpp
+         behaviortree_ros2
+ )
+
+add_library(${PROJECT_NAME} SHARED src/KeyboardControl.cpp
+				   src/MotionControl.cpp)
 
 ament_target_dependencies(${PROJECT_NAME} ${dependencies})
 install(TARGETS ${PROJECT_NAME}
@@ -58,24 +71,86 @@ install(TARGETS keyboard_control DESTINATION lib/${PROJECT_NAME})
 # * * * * * * * * * * * * * * * * *
 # *      Lab 05_localization
 # * * * * * * * * * * * * * * * * *
+add_executable(localization_node src/Localization.cpp
+				 src/localization_node.cpp)
+target_link_libraries(localization_node ${PROJECT_NAME})
+ament_target_dependencies(localization_node ${dependencies})
+install(TARGETS localization_node DESTINATION lib/${PROJECT_NAME})
 
 # * * * * * * * * * * * * * * * * *
 # *      Lab 06_planning
 # * * * * * * * * * * * * * * * * *
+add_executable(planning_node src/Planning.cpp
+			     src/planning_node.cpp)
+target_link_libraries(planning_node ${PROJECT_NAME})
+ament_target_dependencies(planning_node ${dependencies})
+install(TARGETS planning_node DESTINATION lib/${PROJECT_NAME})
 
 # * * * * * * * * * * * * * * * * *
 # *       Lab 07_control
 # * * * * * * * * * * * * * * * * *
+add_executable(motion_control_node src/motion_control_node.cpp)
+target_link_libraries(motion_control_node ${PROJECT_NAME})
+ament_target_dependencies(motion_control_node ${dependencies})
+install(TARGETS motion_control_node DESTINATION lib/${PROJECT_NAME})
 
 # * * * * * * * * * * * * * * * * *
 # *    Lab 08_behavior trees
 # * * * * * * * * * * * * * * * * *
+# TODO (Lab 08): Odkomentujte celou sekci níže po nainstalování BT závislostí.
+ # Warehouse manager (provided)
+ add_library(warehouse_manager_lib SHARED src/bt/WarehouseManager.cpp)
+ ament_target_dependencies(warehouse_manager_lib ${dependencies} std_srvs)
+ add_executable(warehouse_manager src/bt/warehouse_manager_node.cpp)
+ target_link_libraries(warehouse_manager warehouse_manager_lib ${PROJECT_NAME})
+ install(TARGETS warehouse_manager_lib ARCHIVE DESTINATION lib LIBRARY DESTINATION lib RUNTIME DESTINATION bin)
+ install(TARGETS warehouse_manager DESTINATION lib/${PROJECT_NAME})
 
+ # BT server executable
+ add_executable(bt_server src/bt/bt_server.cpp)
+ ament_target_dependencies(bt_server ${bt_dependencies})
+ set_target_properties(bt_server PROPERTIES CXX_STANDARD 17)
+ install(TARGETS bt_server DESTINATION lib/${PROJECT_NAME})
+
+ # BT plugins (shared libraries)
+ set(BT_PLUGIN_TARGETS
+   navigate_to_pose_action_bt_node
+   get_task_service_bt_node
+   confirm_loading_service_bt_node
+   get_dropoff_service_bt_node
+   lookup_pose_bt_node
+ )
+
+ add_library(navigate_to_pose_action_bt_node SHARED src/bt/NavigateToPoseAction.cpp)
+ add_library(get_task_service_bt_node SHARED src/bt/GetTaskService.cpp)
+ add_library(confirm_loading_service_bt_node SHARED src/bt/ConfirmLoadingService.cpp)
+ add_library(get_dropoff_service_bt_node SHARED src/bt/GetDropoffService.cpp)
+ add_library(lookup_pose_bt_node SHARED src/bt/LookupPose.cpp)
+
+ foreach(target ${BT_PLUGIN_TARGETS})
+   ament_target_dependencies(${target} ${bt_dependencies})
+   target_compile_definitions(${target} PRIVATE BT_PLUGIN_EXPORT)
+   set_target_properties(${target} PROPERTIES CXX_STANDARD 17)
+ endforeach()
+
+ install(TARGETS
+   navigate_to_pose_action_bt_node
+   get_task_service_bt_node
+   confirm_loading_service_bt_node
+   get_dropoff_service_bt_node
+   lookup_pose_bt_node
+   LIBRARY DESTINATION share/${PROJECT_NAME}/bt_plugins
+   ARCHIVE DESTINATION share/${PROJECT_NAME}/bt_plugins
+   RUNTIME DESTINATION share/${PROJECT_NAME}/bt_plugins
+ )
 
 # Install additional directories and files
 install(DIRECTORY
         launch
         rviz
+        # TODO (Lab 08): Odkomentujte po implementaci BT
+        behavior_trees
+        config
         DESTINATION share/${PROJECT_NAME}/
 )
 

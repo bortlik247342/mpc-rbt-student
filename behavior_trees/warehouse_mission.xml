@@ -1,0 +1,44 @@
+<root BTCPP_format="4">
+
+  <BehaviorTree ID="WarehouseMission">
+    <Sequence name="main_mission">
+
+      <!-- 1. Pickup task -->
+      <GetTaskService service_name="/get_pickup_task"
+                      manipulator_id="{manipulator_id}"/>
+
+      <!-- 2. Lookup manipulátoru -->
+      <LookupPose location_id="{manipulator_id}"
+                  x="{goal_x}" y="{goal_y}"/>
+
+      <!-- 3. Jet k manipulátoru -->
+      <NavigateToPoseAction action_name="/go_to_goal"
+                            x="{goal_x}" y="{goal_y}"/>
+
+      <!-- 4. Potvrzení nakládky -->
+      <ConfirmLoadingService service_name="/confirm_loading"/>
+
+      <!-- 5. Získání dropoff lokace -->
+      <GetDropoffService service_name="/get_dropoff_location"
+                         storage_id="{storage_id}"/>
+
+      <!-- 6. Lookup skladu -->
+      <LookupPose location_id="{storage_id}"
+                  x="{drop_x}" y="{drop_y}"/>
+
+      <!-- 7. Navigace do skladu -->
+      <NavigateToPoseAction action_name="/go_to_goal"
+                            x="{drop_x}" y="{drop_y}"/>
+
+      <!-- 8. Lookup na start -->
+      <LookupPose location_id="START"
+            x="{start_x}" y="{start_y}"/>
+            
+      <!-- 9. Návrat na start -->
+      <NavigateToPoseAction action_name="/go_to_goal"
+                      x="{start_x}" y="{start_y}"/>
+
+    </Sequence>
+  </BehaviorTree>
+
+</root>
